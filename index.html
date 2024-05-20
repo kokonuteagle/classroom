@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seating Arrangement</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            text-align: center;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .grid {
+            display: grid;
+            gap: 5px;
+            margin: 20px auto;
+        }
+        .cell {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100px;
+            height: 100px;
+            border: 1px solid #ccc;
+            border-radius: 43px;
+            background-color: #f9f9f9;
+            transition: background-color 0.5s;
+            font-size: 25px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .grid-selector-container {
+            display: none;
+            padding: 28px;
+            margin-top: 10px;
+            background-color: #fff;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(10, 20px);
+            grid-template-rows: repeat(10, 20px);
+            gap: 1px;
+        }
+        .grid-item {
+            width: 20px;
+            height: 20px;
+            border: 1px solid black;
+            cursor: pointer;
+        }
+        .grid-item.selected {
+            background-color: lightblue;
+        }
+        .input-cell {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .notice {
+            background-color: #ffeb3b;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-size: 18px;
+        }
+    </style>
+    <script>
+        let selectedRows, selectedCols;
+        let students = [];
+
+        function showGrid() {
+            document.getElementById('gridSelectorContainer').style.display = 'block';
+            document.getElementById('showGridButton').style.display = 'none';
+            document.getElementById('notice').style.display = 'none';
+        }
+
+        function selectCell(event) {
+            const cell = event.target;
+            const cells = document.querySelectorAll('.grid-item');
+            cells.forEach(c => c.classList.remove('selected'));
+            
+            const index = Array.prototype.indexOf.call(cells, cell);
+            const rows = Math.floor(index / 10) + 1;
+            const cols = index % 10 + 1;
+            
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    cells[i * 10 + j].classList.add('selected');
+                }
+            }
+            
+            selectedRows = rows;
+            selectedCols = cols;
+        }
+
+        function confirmGridSelection() {
+            document.getElementById('gridSelectorContainer').style.display = 'none';
+            createSeatingGrid(selectedRows, selectedCols);
+            createInputFields(selectedRows, selectedCols);
+        }
+
+        function createSeatingGrid(rows, cols) {
+            const grid = document.getElementById('grid');
+            grid.style.gridTemplateColumns = `repeat(${cols}, 100px)`;
+            grid.style.gridTemplateRows = `repeat(${rows}, 100px)`;
+            grid.innerHTML = '';
+
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.index = row * cols + col;
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        function createInputFields(rows, cols) {
+            const grid = document.getElementById('grid');
+            const cells = grid.querySelectorAll('.cell');
+
+            cells.forEach((cell, index) => {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.classList.add('input-cell');
+                input.dataset.index = index;
+                cell.appendChild(input);
+            });
+
+            const confirmButton = document.createElement('button');
+            confirmButton.innerText = '자리배치하러 가기';
+            confirmButton.onclick = confirmNames;
+            confirmButton.id = 'confirmNamesButton';
+            document.body.appendChild(confirmButton);
+        }
+
+        function confirmNames() {
+            const inputs = document.querySelectorAll('.input-cell');
+            students = Array.from(inputs).map(input => ({
+                name: input.value,
+                index: parseInt(input.dataset.index)
+            })).filter(student => student.name);
+            
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            createFilteredGrid();
+
+            const confirmButton = document.getElementById('confirmNamesButton');
+            confirmButton.remove();
+
+            const shuffleButton = document.createElement('button');
+            shuffleButton.innerText = '자리배치';
+            shuffleButton.id = 'shuffleBtn';
+            shuffleButton.onclick = shuffleStudents;
+            document.body.appendChild(shuffleButton);
+        }
+
+        function createFilteredGrid() {
+    const grid = document.getElementById('grid');
+    grid.style.gridTemplateColumns = `repeat(${selectedCols}, 100px)`;
+    grid.style.gridTemplateRows = `repeat(${selectedRows}, 100px)`;
+
+    students.forEach(student => {
+        const row = Math.floor(student.index / selectedCols);
+        const col = student.index % selectedCols;
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.dataset.index = student.index;
+        cell.style.gridRowStart = row + 1;
+        cell.style.gridColumnStart = col + 1;
+        cell.style.backgroundColor = '#2ECCFA'; // 황토색으로 설정
+        grid.appendChild(cell);
+    });
+}
+
+        function shuffleStudents() {
+            let iteration = 0;
+            const totalIterations = 25;
+            const shuffleInterval = 160; // 4초 동안 25번 셔플
+
+            const intervalId = setInterval(() => {
+                const shuffledStudents = students.map(student => student.name).slice();
+
+                for (let i = shuffledStudents.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffledStudents[i], shuffledStudents[j]] = [shuffledStudents[j], shuffledStudents[i]];
+                }
+
+                const cells = document.querySelectorAll('.cell');
+                cells.forEach((cell, index) => {
+                    cell.textContent = '';
+                });
+
+                shuffledStudents.forEach((student, index) => {
+                    const cell = cells[index];
+                    cell.textContent = student;
+                });
+
+                iteration++;
+                if (iteration >= totalIterations) {
+                    clearInterval(intervalId);
+                    setFinalOrder();
+                }
+            }, shuffleInterval);
+        }
+
+        function setFinalOrder() {
+    const cells = document.querySelectorAll('.cell');
+    students.forEach((student, index) => {
+        const cell = Array.from(cells).find(c => parseInt(c.dataset.index) === student.index);
+        cell.textContent = student.name;
+        cell.style.backgroundColor = '#2ECCFA'; // 황토색으로 설정
+    });
+}
+
+        function resetPage() {
+            location.reload();
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div id="notice" class="notice">
+            사용방법: 자리배치 사이즈를 선택한 후 학생 이름을 입력하세요. 학생 이름을 입력한 칸만 최종 배치 화면에 나타나게 됩니다.<br> 실제 책상 수보다 큰 사이즈를 선택한 후 빈칸을 활용하여 모둠을 분할 할 수 있습니다.<br>자리배치 프로그램 타이틀을 클릭하면 초기화면으로 복귀합니다.<br>문의: tngus123456@korea.kr 
+        </div>
+        <h1 onclick="resetPage()">자리배치 프로그램</h1>
+        <h2 class="teacher">칠판</h2>
+        <button id="showGridButton" onclick="showGrid()">자리배치 사이즈 선택</button>
+        <div id="gridSelectorContainer" class="grid-selector-container">
+            <div id="gridContainer" class="grid-container">
+                <div class="grid-item" onclick="selectCell(event)"></div>
+                <script>
+                    for (let i = 1; i < 100; i++) {
+                        document.write('<div class="grid-item" onclick="selectCell(event)"></div>');
+                    }
+                </script>
+            </div>
+            <button onclick="confirmGridSelection()">선택 완료</button>
+        </div>
+        <div id="tableContainer"></div>
+        <div id="grid" class="grid"></div>
+    </div>
+    <button id="shuffleBtn" style="display: none;" onclick="shuffleStudents()">자리배치</button>
+</body>
+</html>
