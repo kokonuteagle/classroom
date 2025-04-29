@@ -70,12 +70,9 @@
     <div class="container">
         <div id="notice" class="notice">
             프로그램 소개: 랜덤인척 하는 자리배치 프로그램입니다.<br>
-            <br>사용방법  <br> 
-            1. '자리배치 사이즈 선택' 클릭→ 사이즈 설정 후 '선택 완료' 클릭(실제 책상 수보다 큰 사이즈를 선택)<br> 
-            2. 학생 명단 입력(열바꿈) 후 '명단 확정' 클릭<br>
-            3. 왼쪽 학생명단 목록에서 드래그앤드랍으로 학생 배치. 빈칸을 활용하여 모둠 분할 가능(필요 시 현재 배치 저장)<br>
-            4. '랜덤배치하기'클릭 후 '자리배치하기' 클릭<br>
-            5. 자리배치 프로그램 타이틀을 클릭하면 초기화면으로 복귀합니다.<br><br>
+            <br>사용방법: 1. 자리배치 사이즈를 선택한 후 학생 이름을 입력하세요. 학생 이름을 입력한 칸만 최종 배치 화면에 나타나게 됩니다.<br> 
+            2. 실제 책상 수보다 큰 사이즈를 선택한 후 빈칸을 활용하여 모둠을 분할 할 수 있습니다.<br>
+            3. 자리배치 프로그램 타이틀을 클릭하면 초기화면으로 복귀합니다.<br><br>
             문의: tngus123456@korea.kr <br><br>업데이트: 학생명단 입력 기능 추가, 드래그앤드랍으로 학생배치 가능, 배치 저장하기 기능 추가(브라우저 데이터/캐시/쿠키 삭제 시 삭제)
 
 
@@ -92,7 +89,7 @@
         </div>
 
         <div id="studentListInputContainer" style="display:none; margin-top:20px;">
-            <h3>학생 명단 입력 (행마다 이름 입력, 엑셀 복붙 가능)</h3>
+            <h3>학생 명단 입력 (행마다 이름 입력, 엑셀 복붙 가능능)</h3>
             <textarea id="studentNamesTextarea" rows="10" cols="50"></textarea><br>
             <button type="button" onclick="processStudentList()">명단 확정</button>
         </div>
@@ -209,72 +206,76 @@
             const cell = document.createElement('div'); cell.className = 'cell'; cell.dataset.index = r * cols + c;
             cell.addEventListener('dragover', e => e.preventDefault());
             cell.addEventListener('drop', drop);
-            cell.draggable = true;
+            cell.draggable = false;
             cell.addEventListener('dragstart', dragStart);
             grid.appendChild(cell);
         }
     }
 
-    function dragStart(e) {
-        const t = e.target;
-        if ((t.classList.contains('student-icon') || t.classList.contains('cell')) && t.dataset.studentId) {
-            e.dataTransfer.setData('studentId', t.dataset.studentId);
-            e.dataTransfer.setData('sourceType', t.classList.contains('student-icon') ? 'list' : 'cell');
+  /* ---------- 드래그 & 드롭 ---------- */
+function dragStart(e) {
+    const t = e.target;
+    // 목록 아이콘 또는 이미 학생이 들어간 셀만 드래그 가능
+    if ((t.classList.contains('student-icon') || t.classList.contains('cell')) && t.dataset.studentId) {
+        e.dataTransfer.setData('studentId', t.dataset.studentId);
+        e.dataTransfer.setData('sourceType', t.classList.contains('student-icon') ? 'list' : 'cell');
+    } else {
+        e.preventDefault();   // 빈 셀 끌기 방지
+    }
+}
+
+function drop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const studentId  = e.dataTransfer.getData('studentId');
+    const sourceType = e.dataTransfer.getData('sourceType');
+    const targetCell = e.target.closest('.cell');
+    if (!studentId || !targetCell) return;
+
+    const student = students.find(s => s.id == studentId);
+    if (!student) return;
+
+    /* ① 원래 위치 비우기 */
+    const sourceCell = sourceType === 'cell'
+        ? document.querySelector(`.cell[data-student-id='${studentId}']`)
+        : null;
+    if (sourceCell) {
+        sourceCell.innerText = '';
+        sourceCell.style.backgroundColor = '#f9f9f9';
+        sourceCell.draggable = false;
+        delete sourceCell.dataset.studentId;
+    }
+
+    /* ② 대상 셀에 다른 학생이 있으면 처리 */
+    const existingId = targetCell.dataset.studentId;
+    if (existingId && existingId !== studentId) {
+        if (sourceCell) {
+            // ★ 셀 ↔ 셀 스와프
+            const exStu = students.find(s => s.id == existingId);
+            sourceCell.innerText           = exStu.name;
+            sourceCell.dataset.studentId   = exStu.id;
+            sourceCell.style.backgroundColor = '#2ECCFA';
+            sourceCell.draggable = true;
         } else {
-            e.preventDefault();
+            // ★ 목록 → 셀 드래그인 경우, 기존 학생을 목록으로 복귀
+            const exIcon = document.querySelector(`.student-icon[data-student-id='${existingId}']`);
+            if (exIcon) exIcon.style.display = 'block';
         }
     }
 
-    function drop(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        const studentId = e.dataTransfer.getData('studentId');
-        const sourceType = e.dataTransfer.getData('sourceType');
-        const targetCell = e.target.closest('.cell');
-        const student = students.find(s => s.id == studentId);
-        if (!targetCell || !student) return;
+    /* ③ 학생 배치 */
+    targetCell.innerText           = student.name;
+    targetCell.dataset.studentId   = student.id;
+    targetCell.style.backgroundColor = '#2ECCFA';
+    targetCell.draggable = true;
 
-        const existingStudentId = targetCell.dataset.studentId;
-        const sourceCell = document.querySelector(`.cell[data-student-id='${studentId}']`);
-
-        if (targetCell.dataset.studentId === studentId) return; // 동일 셀
-
-        if (!existingStudentId) {
-            // 빈 셀
-            targetCell.innerText = student.name;
-            targetCell.dataset.studentId = student.id;
-            targetCell.style.backgroundColor = '#2ECCFA';
-            targetCell.draggable = true;
-            if (sourceType === 'list') {
-                document.querySelector(`.student-icon[data-student-id='${studentId}']`).style.display = 'none';
-            } else if (sourceCell) {
-                delete sourceCell.dataset.studentId;
-                sourceCell.innerText = '';
-                sourceCell.style.backgroundColor = '#f9f9f9';
-                sourceCell.draggable = false;
-            }
-        } else {
-            // 자리 교환
-            const existingStudent = students.find(s => s.id == existingStudentId);
-            if (!existingStudent) return;
-            targetCell.innerText = student.name;
-            targetCell.dataset.studentId = student.id;
-            if (sourceType === 'list') {
-                const existingIcon = document.querySelector(`.student-icon[data-student-id='${existingStudentId}']`);
-                if (existingIcon) existingIcon.style.display = 'block';
-                document.querySelector(`.student-icon[data-student-id='${studentId}']`).style.display = 'none';
-            } else if (sourceCell) {
-                sourceCell.innerText = existingStudent.name;
-                sourceCell.dataset.studentId = existingStudent.id;
-                sourceCell.style.backgroundColor = '#2ECCFA';
-                sourceCell.draggable = true;
-            } else {
-                const existingIcon = document.querySelector(`.student-icon[data-student-id='${existingStudentId}']`);
-                if (existingIcon) existingIcon.style.display = 'block';
-            }
-        }
-        document.querySelectorAll('.cell').forEach(c => c.draggable = !!c.dataset.studentId);
+    /* ④ 목록 아이콘 숨김/복원 */
+    if (sourceType === 'list') {
+        const icon = document.querySelector(`.student-icon[data-student-id='${studentId}']`);
+        if (icon) icon.style.display = 'none';
     }
+}
 
     function prepareShuffle() {
         document.getElementById('studentNamesList').style.display = 'none';
