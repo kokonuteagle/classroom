@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>교실 자리배치 프로그램</title>
+    <title>자리배치 프로그램</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -33,244 +33,362 @@
             width: 100px;
             height: 100px;
             border: 1px solid #ccc;
-            border-radius: 43px;
+            border-radius: 43px; /* 원형에 가까운 모양 */
             background-color: #f9f9f9;
             transition: background-color 0.5s;
             font-size: 25px;
         }
-        button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-top: 10px;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .grid-selector-container {
+        .cell.hidden { visibility: hidden; }
+        button { background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        button:hover { background-color: #0056b3; }
+        .grid-selector-container { display: none; padding: 28px; margin-top: 10px; background-color: #fff; }
+        .grid-container { display: grid; grid-template-columns: repeat(10, 20px); grid-template-rows: repeat(10, 20px); gap: 1px; }
+        .grid-item { width: 20px; height: 20px; border: 1px solid black; cursor: pointer; }
+        .grid-item.selected { background-color: lightblue; }
+        .notice { background-color: #ffeb3b; padding: 15px; margin-bottom: 20px; border-radius: 4px; font-size: 18px; }
+        .student-icon { padding: 5px; margin: 5px; border: 1px solid #ccc; border-radius: 4px; background-color: #e9e9e9; cursor: grab; text-align: center; }
+        .student-icon:active { cursor: grabbing; }
+        /* 수정: seatingArrangementContainer 레이아웃 개선 */
+        #seatingArrangementContainer {
             display: none;
-            padding: 28px;
-            margin-top: 10px;
-            background-color: #fff;
+            margin-top: 20px;
+            flex-direction: row;
+            align-items: flex-start;
         }
-        .grid-container {
-            display: grid;
-            grid-template-columns: repeat(10, 20px);
-            grid-template-rows: repeat(10, 20px);
-            gap: 1px;
+        #studentNamesList {
+            width: 200px;
+            padding-right: 10px;
+            overflow-y: auto;
+            border: none; /* 오른쪽 경계선 제거 */
         }
-        .grid-item {
-            width: 20px;
-            height: 20px;
-            border: 1px solid black;
-            cursor: pointer;
-        }
-        .grid-item.selected {
-            background-color: lightblue;
-        }
-        .input-cell {
-            width: 100px;
-            height: 100px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .notice {
-            background-color: #ffeb3b;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-            font-size: 18px;
+        .grid-wrapper {
+            flex-grow: 1;
         }
     </style>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-K0SXCZV8KF"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-K0SXCZV8KF');
-    </script>
-    <script>
-        let selectedRows, selectedCols;
-        let students = [];
-
-        function showGrid() {
-            document.getElementById('gridSelectorContainer').style.display = 'block';
-            document.getElementById('showGridButton').style.display = 'none';
-            document.getElementById('notice').style.display = 'none';
-        }
-
-        function selectCell(event) {
-            const cell = event.target;
-            const cells = document.querySelectorAll('.grid-item');
-            cells.forEach(c => c.classList.remove('selected'));
-            
-            const index = Array.prototype.indexOf.call(cells, cell);
-            const rows = Math.floor(index / 10) + 1;
-            const cols = index % 10 + 1;
-            
-            for (let i = 0; i < rows; i++) {
-                for (let j = 0; j < cols; j++) {
-                    cells[i * 10 + j].classList.add('selected');
-                }
-            }
-            
-            selectedRows = rows;
-            selectedCols = cols;
-        }
-
-        function confirmGridSelection() {
-            document.getElementById('gridSelectorContainer').style.display = 'none';
-            createSeatingGrid(selectedRows, selectedCols);
-            createInputFields(selectedRows, selectedCols);
-        }
-
-        function createSeatingGrid(rows, cols) {
-            const grid = document.getElementById('grid');
-            grid.style.gridTemplateColumns = `repeat(${cols}, 100px)`;
-            grid.style.gridTemplateRows = `repeat(${rows}, 100px)`;
-            grid.innerHTML = '';
-
-            for (let row = 0; row < rows; row++) {
-                for (let col = 0; col < cols; col++) {
-                    const cell = document.createElement('div');
-                    cell.classList.add('cell');
-                    cell.dataset.index = row * cols + col;
-                    grid.appendChild(cell);
-                }
-            }
-        }
-
-        function createInputFields(rows, cols) {
-            const grid = document.getElementById('grid');
-            const cells = grid.querySelectorAll('.cell');
-
-            cells.forEach((cell, index) => {
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.classList.add('input-cell');
-                input.dataset.index = index;
-                cell.appendChild(input);
-            });
-
-            const confirmButton = document.createElement('button');
-            confirmButton.innerText = '자리배치하러 가기';
-            confirmButton.onclick = confirmNames;
-            confirmButton.id = 'confirmNamesButton';
-            document.body.appendChild(confirmButton);
-        }
-
-        function confirmNames() {
-            const inputs = document.querySelectorAll('.input-cell');
-            students = Array.from(inputs).map(input => ({
-                name: input.value,
-                index: parseInt(input.dataset.index)
-            })).filter(student => student.name);
-            
-            const grid = document.getElementById('grid');
-            grid.innerHTML = '';
-            createFilteredGrid();
-
-            const confirmButton = document.getElementById('confirmNamesButton');
-            confirmButton.remove();
-
-            const shuffleButton = document.createElement('button');
-            shuffleButton.innerText = '자리배치';
-            shuffleButton.id = 'shuffleBtn';
-            shuffleButton.onclick = shuffleStudents;
-            document.body.appendChild(shuffleButton);
-        }
-
-        function createFilteredGrid() {
-    const grid = document.getElementById('grid');
-    grid.style.gridTemplateColumns = `repeat(${selectedCols}, 100px)`;
-    grid.style.gridTemplateRows = `repeat(${selectedRows}, 100px)`;
-
-    students.forEach(student => {
-        const row = Math.floor(student.index / selectedCols);
-        const col = student.index % selectedCols;
-        const cell = document.createElement('div');
-        cell.classList.add('cell');
-        cell.dataset.index = student.index;
-        cell.style.gridRowStart = row + 1;
-        cell.style.gridColumnStart = col + 1;
-        cell.style.backgroundColor = '#2ECCFA'; // 황토색으로 설정
-        grid.appendChild(cell);
-    });
-}
-
-        function shuffleStudents() {
-            let iteration = 0;
-            const totalIterations = 25;
-            const shuffleInterval = 160; // 4초 동안 25번 셔플
-
-            const intervalId = setInterval(() => {
-                const shuffledStudents = students.map(student => student.name).slice();
-
-                for (let i = shuffledStudents.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [shuffledStudents[i], shuffledStudents[j]] = [shuffledStudents[j], shuffledStudents[i]];
-                }
-
-                const cells = document.querySelectorAll('.cell');
-                cells.forEach((cell, index) => {
-                    cell.textContent = '';
-                });
-
-                shuffledStudents.forEach((student, index) => {
-                    const cell = cells[index];
-                    cell.textContent = student;
-                });
-
-                iteration++;
-                if (iteration >= totalIterations) {
-                    clearInterval(intervalId);
-                    setFinalOrder();
-                }
-            }, shuffleInterval);
-        }
-
-        function setFinalOrder() {
-    const cells = document.querySelectorAll('.cell');
-    students.forEach((student, index) => {
-        const cell = Array.from(cells).find(c => parseInt(c.dataset.index) === student.index);
-        cell.textContent = student.name;
-        cell.style.backgroundColor = '#2ECCFA'; // 황토색으로 설정
-    });
-}
-
-        function resetPage() {
-            location.reload();
-        }
-
-    </script>
 </head>
 <body>
     <div class="container">
         <div id="notice" class="notice">
-            프로그램 소개: 랜덤인척 하는 자리배치 프로그램입니다.<br><br>사용방법: 1. 자리배치 사이즈를 선택한 후 학생 이름을 입력하세요. 학생 이름을 입력한 칸만 최종 배치 화면에 나타나게 됩니다.<br> 2. 실제 책상 수보다 큰 사이즈를 선택한 후 빈칸을 활용하여 모둠을 분할 할 수 있습니다.<br>3. 자리배치 프로그램 타이틀을 클릭하면 초기화면으로 복귀합니다.<br><br>주의사항: 아이들이 의심할 경우 "또 자리배치 버튼을 누르면 형평성에 어긋날 수 있어요"라고 말씀하시고 프로그램을 종료해주세요.<br><br>문의: tngus123456@korea.kr 
+            프로그램 소개: 랜덤인척 하는 자리배치 프로그램입니다.<br>
+            <br>사용방법: 1. 자리배치 사이즈를 선택한 후 학생 이름을 입력하세요. 학생 이름을 입력한 칸만 최종 배치 화면에 나타나게 됩니다.<br> 
+            2. 실제 책상 수보다 큰 사이즈를 선택한 후 빈칸을 활용하여 모둠을 분할 할 수 있습니다.<br>
+            3. 자리배치 프로그램 타이틀을 클릭하면 초기화면으로 복귀합니다.<br><br>
+            주의사항: 아이들이 의심할 경우 "또 자리배치 버튼을 누르면 형평성에 어긋날 수 있어요"라고 말씀하시고 프로그램을 종료해주세요.<br><br>
+            문의: tngus123456@korea.kr <br><br>업데이트: 학생명단 입력 기능 추가, 드래그앤드랍으로 학생배치 가능능, 배치 저장하기 기능 추가(브라우저 데이터/캐시/쿠키 삭제 시 삭제)
+
+       
         </div>
-        <h1 onclick="resetPage()">자리배치 프로그램</h1>
-        <h2 class="teacher">칠판</h2>
-        <button id="showGridButton" onclick="showGrid()">자리배치 사이즈 선택</button>
+        <h1 onclick="location.reload()">자리배치 프로그램</h1>
+        <button type="button" id="showGridButton" onclick="showGrid()">자리배치 사이즈 선택</button>
+        <button type="button" id="loadSavedButton" style="display:none;" onclick="loadSavedArrangement()">저장된 배치 불러오기</button>
+
         <div id="gridSelectorContainer" class="grid-selector-container">
-            <div id="gridContainer" class="grid-container">
-                <div class="grid-item" onclick="selectCell(event)"></div>
-                <script>
-                    for (let i = 1; i < 100; i++) {
-                        document.write('<div class="grid-item" onclick="selectCell(event)"></div>');
-                    }
-                </script>
-            </div>
-            <button onclick="confirmGridSelection()">선택 완료</button>
+            <div id="gridContainer" class="grid-container"></div>
+            <button type="button" onclick="confirmGridSelection()">선택 완료</button>
         </div>
-        <div id="tableContainer"></div>
-        <div id="grid" class="grid"></div>
+
+        <div id="studentListInputContainer" style="display:none; margin-top:20px;">
+            <h3>학생 명단 입력 (행마다 이름 입력, 엑셀 복붙 가능능)</h3>
+            <textarea id="studentNamesTextarea" rows="10" cols="50"></textarea><br>
+            <button type="button" onclick="processStudentList()">명단 확정</button>
+        </div>
+
+        <!-- 수정: seatingArrangementContainer 레이아웃 구조 개선 -->
+        <div id="seatingArrangementContainer">
+            <div id="studentNamesList"></div>
+            <div class="grid-wrapper">
+                <div id="grid" class="grid"></div>
+            </div>
+        </div>
+
+        <button type="button" id="prepareButton" style="display:none;" onclick="prepareShuffle()">랜덤배치하기</button>
+        <button type="button" id="shuffleButton" style="display:none;" onclick="shuffleStudents()">자리배치하기</button>
+        <button type="button" id="saveButton" style="display:none;" onclick="saveArrangement()">저장하기</button>
+        <button type="button" id="resetButton" style="display:none;" onclick="resetArrangement()">초기화</button>
     </div>
-    <button id="shuffleBtn" style="display: none;" onclick="shuffleStudents()">자리배치</button>
+
+<script>
+    const STORAGE_KEY = 'seatArrangement';
+    let selectedRows, selectedCols, students = [], originalArrangement = [], designatedCells = [];
+
+    // 페이지 로드 시 저장된 배치 유무 확인
+    window.addEventListener('load', () => {
+        if (localStorage.getItem(STORAGE_KEY)) {
+            document.getElementById('loadSavedButton').style.display = 'inline-block';
+        }
+    });
+
+    function showGrid() {
+        document.getElementById('gridSelectorContainer').style.display = 'block';
+        document.getElementById('showGridButton').style.display = 'none';
+        
+        // 그리드 선택 화면에서는 불러오기 버튼 숨김
+        document.getElementById('loadSavedButton').style.display = 'none';
+        
+        document.getElementById('notice').style.display = 'none';
+        const container = document.getElementById('gridContainer'); container.innerHTML = '';
+        for (let i = 0; i < 100; i++) {
+            const div = document.createElement('div'); div.className = 'grid-item'; div.onclick = selectCell;
+            container.appendChild(div);
+        }
+    }
+
+    function selectCell(e) {
+        const items = [...document.querySelectorAll('.grid-item')];
+        items.forEach(it => it.classList.remove('selected'));
+        const idx = items.indexOf(e.target);
+        const rows = Math.floor(idx / 10) + 1;
+        const cols = idx % 10 + 1;
+        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) items[r * 10 + c].classList.add('selected');
+        selectedRows = rows; selectedCols = cols;
+    }
+
+    function confirmGridSelection() {
+        document.getElementById('gridSelectorContainer').style.display = 'none';
+        document.getElementById('studentListInputContainer').style.display = 'block';
+        
+        // 학생 명단 입력 화면에서 불러오기 버튼 숨김
+        document.getElementById('loadSavedButton').style.display = 'none';
+    }
+
+    function processStudentList() {
+        const names = document.getElementById('studentNamesTextarea').value.split('\n').map(n => n.trim()).filter(n => n);
+        students = names.map((n, i) => ({ name: n, id: i }));
+        document.getElementById('studentListInputContainer').style.display = 'none';
+        document.getElementById('seatingArrangementContainer').style.display = 'flex';
+        document.getElementById('prepareButton').style.display = 'inline-block';
+        document.getElementById('resetButton').style.display = 'inline-block';
+        document.getElementById('saveButton').style.display = 'inline-block';
+        
+        // 저장된 데이터가 있으면 드래그앤드랍 화면에서 불러오기 버튼 표시
+        if (localStorage.getItem(STORAGE_KEY)) {
+            document.getElementById('loadSavedButton').style.display = 'inline-block';
+        }
+        
+        createStudentIcons(); createGrid(selectedRows, selectedCols);
+    }
+
+    function createStudentIcons() {
+        const list = document.getElementById('studentNamesList'); list.innerHTML = '';
+        students.forEach(s => {
+            const icon = document.createElement('div'); icon.className = 'student-icon'; icon.innerText = s.name;
+            icon.draggable = true; icon.dataset.studentId = s.id; icon.addEventListener('dragstart', dragStart);
+            list.appendChild(icon);
+        });
+    }
+
+    function createGrid(rows, cols) {
+        const grid = document.getElementById('grid'); grid.innerHTML = '';
+        grid.style.gridTemplateColumns = `repeat(${cols}, 100px)`;
+        grid.style.gridTemplateRows = `repeat(${rows}, 100px)`;
+        grid.addEventListener('dragover', e => e.preventDefault());
+        grid.addEventListener('drop', drop);
+        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+            const cell = document.createElement('div'); cell.className = 'cell'; cell.dataset.index = r * cols + c;
+            cell.addEventListener('dragover', e => e.preventDefault());
+            cell.addEventListener('drop', drop);
+            cell.draggable = true;
+            cell.addEventListener('dragstart', dragStart);
+            grid.appendChild(cell);
+        }
+    }
+
+    function dragStart(e) {
+        const t = e.target;
+        if ((t.classList.contains('student-icon') || t.classList.contains('cell')) && t.dataset.studentId) {
+            e.dataTransfer.setData('studentId', t.dataset.studentId);
+            e.dataTransfer.setData('sourceType', t.classList.contains('student-icon') ? 'list' : 'cell');
+        } else {
+            e.preventDefault();
+        }
+    }
+
+    function drop(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const studentId = e.dataTransfer.getData('studentId');
+        const sourceType = e.dataTransfer.getData('sourceType');
+        const targetCell = e.target.closest('.cell');
+        const student = students.find(s => s.id == studentId);
+        if (!targetCell || !student) return;
+
+        const existingStudentId = targetCell.dataset.studentId;
+        const sourceCell = document.querySelector(`.cell[data-student-id='${studentId}']`);
+
+        if (targetCell.dataset.studentId === studentId) return; // 동일 셀
+
+        if (!existingStudentId) {
+            // 빈 셀
+            targetCell.innerText = student.name;
+            targetCell.dataset.studentId = student.id;
+            targetCell.style.backgroundColor = '#2ECCFA';
+            targetCell.draggable = true;
+            if (sourceType === 'list') {
+                document.querySelector(`.student-icon[data-student-id='${studentId}']`).style.display = 'none';
+            } else if (sourceCell) {
+                delete sourceCell.dataset.studentId;
+                sourceCell.innerText = '';
+                sourceCell.style.backgroundColor = '#f9f9f9';
+                sourceCell.draggable = false;
+            }
+        } else {
+            // 자리 교환
+            const existingStudent = students.find(s => s.id == existingStudentId);
+            if (!existingStudent) return;
+            targetCell.innerText = student.name;
+            targetCell.dataset.studentId = student.id;
+            if (sourceType === 'list') {
+                const existingIcon = document.querySelector(`.student-icon[data-student-id='${existingStudentId}']`);
+                if (existingIcon) existingIcon.style.display = 'block';
+                document.querySelector(`.student-icon[data-student-id='${studentId}']`).style.display = 'none';
+            } else if (sourceCell) {
+                sourceCell.innerText = existingStudent.name;
+                sourceCell.dataset.studentId = existingStudent.id;
+                sourceCell.style.backgroundColor = '#2ECCFA';
+                sourceCell.draggable = true;
+            } else {
+                const existingIcon = document.querySelector(`.student-icon[data-student-id='${existingStudentId}']`);
+                if (existingIcon) existingIcon.style.display = 'block';
+            }
+        }
+        document.querySelectorAll('.cell').forEach(c => c.draggable = !!c.dataset.studentId);
+    }
+
+    function prepareShuffle() {
+        document.getElementById('studentNamesList').style.display = 'none';
+        const cells = [...document.querySelectorAll('.cell')];
+        originalArrangement = cells.map(cell => ({ index: parseInt(cell.dataset.index), studentId: cell.dataset.studentId, name: cell.innerText }));
+        designatedCells = cells.filter(cell => cell.dataset.studentId);
+        cells.forEach(cell => {
+            if (cell.dataset.studentId) {
+                cell.innerText = '';
+                cell.style.backgroundColor = '#2ECCFA';
+                cell.draggable = false;
+            } else {
+                cell.classList.add('hidden');
+            }
+        });
+        document.getElementById('prepareButton').style.display = 'none';
+        document.getElementById('shuffleButton').style.display = 'inline-block';
+        
+        // 셔플 준비 화면에서 저장하기, 초기화 버튼 숨김
+        document.getElementById('saveButton').style.display = 'none';
+        document.getElementById('resetButton').style.display = 'none';
+        document.getElementById('loadSavedButton').style.display = 'none';
+    }
+
+    function shuffleStudents() {
+        let iter = 0, total = 25, intervalTime = 160;
+        const currentNames = originalArrangement.filter(a => a.studentId).map(a => a.name);
+        const intervalId = setInterval(() => {
+            let shuffled = currentNames.slice();
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            designatedCells.forEach((cell, i) => cell.innerText = shuffled[i]);
+            iter++;
+            if (iter >= total) {
+                clearInterval(intervalId);
+                setFinalOrder();
+            }
+        }, intervalTime);
+        document.getElementById('shuffleButton').disabled = true;
+        document.getElementById('resetButton').disabled = true;
+        document.getElementById('saveButton').disabled = true;
+    }
+
+
+    function setFinalOrder() {
+    originalArrangement.forEach(a => {
+        const cell = document.querySelector(`.cell[data-index='${a.index}']`);
+        if (!cell) return;
+        if (a.studentId) {
+            cell.innerText = a.name;
+            cell.dataset.studentId = a.studentId;
+            cell.style.backgroundColor = '#2ECCFA';
+            cell.classList.remove('hidden');
+            cell.draggable = true;
+        } else {
+            cell.innerText = '';
+            delete cell.dataset.studentId;
+            cell.style.backgroundColor = '#f9f9f9';
+            cell.classList.add('hidden');
+            cell.draggable = false;
+        }
+    });
+    
+    // 셔플 후 최종 화면에서는 모든 버튼 숨기기
+    document.getElementById('shuffleButton').style.display = 'none';
+    document.getElementById('shuffleButton').disabled = false;
+    document.getElementById('prepareButton').style.display = 'none';
+    document.getElementById('resetButton').style.display = 'none';
+    document.getElementById('resetButton').disabled = false;
+    document.getElementById('saveButton').style.display = 'none';
+    document.getElementById('saveButton').disabled = false;
+    document.getElementById('loadSavedButton').style.display = 'none';
+}
+
+    function resetArrangement() {
+        createStudentIcons();
+        document.getElementById('studentNamesList').style.display = 'block';
+        document.querySelectorAll('.cell').forEach(cell => {
+            delete cell.dataset.studentId;
+            cell.innerText = '';
+            cell.style.backgroundColor = '#f9f9f9';
+            cell.classList.remove('hidden');
+            cell.draggable = false;
+        });
+        document.getElementById('shuffleButton').style.display = 'none';
+        document.getElementById('prepareButton').style.display = 'inline-block';
+    }
+
+    /* ---------------- 저장 / 불러오기 ---------------- */
+    function saveArrangement() {
+        const arrangementData = {
+            rows: selectedRows,
+            cols: selectedCols,
+            students: students,
+            arrangement: [...document.querySelectorAll('.cell')]
+                            .filter(c => c.dataset.studentId)
+                            .map(c => ({ index: parseInt(c.dataset.index), studentId: c.dataset.studentId }))
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(arrangementData));
+        alert('배치가 저장되었습니다.');
+        if (document.getElementById('loadSavedButton').style.display === 'none') {
+            document.getElementById('loadSavedButton').style.display = 'inline-block';
+        }
+    }
+
+    function loadSavedArrangement() {
+        const dataStr = localStorage.getItem(STORAGE_KEY);
+        if (!dataStr) return alert('저장된 정보가 없습니다.');
+        const data = JSON.parse(dataStr);
+        selectedRows = data.rows;
+        selectedCols = data.cols;
+        students = data.students;
+        document.getElementById('showGridButton').style.display = 'none';
+        document.getElementById('loadSavedButton').style.display = 'none';
+        document.getElementById('notice').style.display = 'none';
+        document.getElementById('seatingArrangementContainer').style.display = 'flex';
+        document.getElementById('prepareButton').style.display = 'inline-block';
+        document.getElementById('resetButton').style.display = 'inline-block';
+        document.getElementById('saveButton').style.display = 'inline-block';
+        createStudentIcons();
+        createGrid(selectedRows, selectedCols);
+        data.arrangement.forEach(a => {
+            const cell = document.querySelector(`.cell[data-index='${a.index}']`);
+            if (!cell) return;
+            const student = students.find(s => s.id == a.studentId);
+            if (!student) return;
+            cell.innerText = student.name;
+            cell.dataset.studentId = student.id;
+            cell.style.backgroundColor = '#2ECCFA';
+            cell.draggable = true;
+            const icon = document.querySelector(`.student-icon[data-student-id='${student.id}']`);
+            if (icon) icon.style.display = 'none';
+        });
+    }
+</script>
 </body>
 </html>
