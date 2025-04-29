@@ -42,7 +42,7 @@
         button { background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 10px; }
         button:hover { background-color: #0056b3; }
         .grid-selector-container { display: none; padding: 28px; margin-top: 10px; background-color: #fff; }
-        .grid-container { display: grid; grid-template-columns: repeat(10, 20px); grid-template-rows: repeat(10, 20px); gap: 1px; }
+        .grid-container { display: grid; grid-template-columns: repeat(12, 20px); grid-template-rows: repeat(12, 20px); gap: 1px; }
         .grid-item { width: 20px; height: 20px; border: 1px solid black; cursor: pointer; }
         .grid-item.selected { background-color: lightblue; }
         .notice { background-color: #ffeb3b; padding: 15px; margin-bottom: 20px; border-radius: 4px; font-size: 18px; }
@@ -84,6 +84,7 @@
 
         <div id="gridSelectorContainer" class="grid-selector-container">
             <div id="gridContainer" class="grid-container"></div>
+            <div id="selectedSizeDisplay" style="margin-top: 10px; font-size: 18px;"></div> <!-- 선택된 사이즈 표시 -->
             <button type="button" onclick="confirmGridSelection()">선택 완료</button>
         </div>
 
@@ -127,7 +128,7 @@
         
         document.getElementById('notice').style.display = 'none';
         const container = document.getElementById('gridContainer'); container.innerHTML = '';
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < 144; i++) { // 12x12 = 144
             const div = document.createElement('div'); div.className = 'grid-item'; div.onclick = selectCell;
             container.appendChild(div);
         }
@@ -135,12 +136,30 @@
 
     function selectCell(e) {
         const items = [...document.querySelectorAll('.grid-item')];
-        items.forEach(it => it.classList.remove('selected'));
+        // 모든 셀의 선택 상태와 텍스트 초기화
+        items.forEach(it => {
+            it.classList.remove('selected');
+            it.innerText = '';
+        });
+
         const idx = items.indexOf(e.target);
-        const rows = Math.floor(idx / 10) + 1;
-        const cols = idx % 10 + 1;
-        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) items[r * 10 + c].classList.add('selected');
-        selectedRows = rows; selectedCols = cols;
+        const rows = Math.floor(idx / 12) + 1; // 12열 기준 계산
+        const cols = idx % 12 + 1; // 12열 기준 계산
+
+        // 선택된 영역에 클래스 추가
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                const itemIndex = r * 12 + c; // 12열 기준 인덱스 계산
+                if (itemIndex < items.length) {
+                    items[itemIndex].classList.add('selected');
+                }
+            }
+        }
+        selectedRows = rows;
+        selectedCols = cols;
+
+        // 선택된 사이즈를 별도의 요소에 표시
+        document.getElementById('selectedSizeDisplay').innerText = `${selectedRows}*${selectedCols}`;
     }
 
     function confirmGridSelection() {
