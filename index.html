@@ -70,9 +70,12 @@
     <div class="container">
         <div id="notice" class="notice">
             프로그램 소개: 랜덤인척 하는 자리배치 프로그램입니다.<br>
-            <br>사용방법: 1. 자리배치 사이즈를 선택한 후 학생 이름을 입력하세요. 학생 이름을 입력한 칸만 최종 배치 화면에 나타나게 됩니다.<br> 
-            2. 실제 책상 수보다 큰 사이즈를 선택한 후 빈칸을 활용하여 모둠을 분할 할 수 있습니다.<br>
-            3. 자리배치 프로그램 타이틀을 클릭하면 초기화면으로 복귀합니다.<br><br>
+            <br>사용방법  <br> 
+            1. '자리배치 사이즈 선택' 클릭→ 사이즈 설정 후 '선택 완료' 클릭(실제 책상 수보다 큰 사이즈를 선택)<br> 
+            2. 학생 명단 입력(열바꿈) 후 '명단 확정' 클릭<br>
+            3. 왼쪽 학생명단 목록에서 드래그앤드랍으로 학생 배치. 빈칸을 활용하여 모둠 분할 가능(필요 시 현재 배치 저장)<br>
+            4. '자리배치애니매에션 시작'클릭 후 '자리배치하기' 클릭<br>
+            5. 자리배치 프로그램 타이틀을 클릭하면 초기화면으로 복귀합니다.<br><br>
             문의: tngus123456@korea.kr <br><br>업데이트: 학생명단 입력 기능 추가, 드래그앤드랍으로 학생배치 가능, 배치 저장하기 기능 추가(브라우저 데이터/캐시/쿠키 삭제 시 삭제)
 
 
@@ -89,7 +92,7 @@
         </div>
 
         <div id="studentListInputContainer" style="display:none; margin-top:20px;">
-            <h3>학생 명단 입력 (행마다 이름 입력, 엑셀 복붙 가능능)</h3>
+            <h3>학생 명단 입력 (행마다 이름 입력, 엑셀 복붙 가능)</h3>
             <textarea id="studentNamesTextarea" rows="10" cols="50"></textarea><br>
             <button type="button" onclick="processStudentList()">명단 확정</button>
         </div>
@@ -102,7 +105,7 @@
             </div>
         </div>
 
-        <button type="button" id="prepareButton" style="display:none;" onclick="prepareShuffle()">랜덤배치하기</button>
+        <button type="button" id="prepareButton" style="display:none;" onclick="prepareShuffle()">자리배치애니매에션 시작</button>
         <button type="button" id="shuffleButton" style="display:none;" onclick="shuffleStudents()">자리배치하기</button>
         <button type="button" id="saveButton" style="display:none;" onclick="saveArrangement()">저장하기</button>
         <button type="button" id="resetButton" style="display:none;" onclick="resetArrangement()">초기화</button>
